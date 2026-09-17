@@ -37,6 +37,12 @@ yarn-error.log*
 # harness/editor local state
 .claude/scheduled_tasks.lock
 
+# stvarni skenovi osobnih dokumenata za OCR testiranje - nikad ne commitati (PII)
+OSOBNA SCAN.pdf
+PROMETNA SCAN.pdf
+*-scan-page-*.png
+scripts/_tmp-*
+
 # vercel
 .vercel
 
