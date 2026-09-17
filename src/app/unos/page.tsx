@@ -29,6 +29,9 @@ export default function UnosPage() {
   const [prodavatelj, setProdavatelj] = useState<PersonFormState>(emptyPersonForm);
   const [kupac, setKupac] = useState<PersonFormState>(emptyPersonForm);
   const [vehicle, setVehicle] = useState<VehicleFormState>(emptyVehicleForm);
+  const [vehicleConfirmed, setVehicleConfirmed] = useState(false);
+  const [prodavateljConfirmed, setProdavateljConfirmed] = useState(false);
+  const [kupacConfirmed, setKupacConfirmed] = useState(false);
   const [dogovorenaCijena, setDogovorenaCijena] = useState("");
   const [proviziaFirme, setProviziaFirme] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
@@ -79,9 +82,26 @@ export default function UnosPage() {
       </p>
 
       <form onSubmit={handleSubmit} className={styles.form}>
-        <VehicleForm value={vehicle} onChange={setVehicle} />
-        <PersonForm title="Prodavatelj" value={prodavatelj} onChange={setProdavatelj} />
-        <PersonForm title="Kupac" value={kupac} onChange={setKupac} />
+        <VehicleForm
+          value={vehicle}
+          onChange={setVehicle}
+          confirmed={vehicleConfirmed}
+          onConfirmedChange={setVehicleConfirmed}
+        />
+        <PersonForm
+          title="Prodavatelj"
+          value={prodavatelj}
+          onChange={setProdavatelj}
+          confirmed={prodavateljConfirmed}
+          onConfirmedChange={setProdavateljConfirmed}
+        />
+        <PersonForm
+          title="Kupac"
+          value={kupac}
+          onChange={setKupac}
+          confirmed={kupacConfirmed}
+          onConfirmedChange={setKupacConfirmed}
+        />
 
         <div className={styles.priceSection}>
           <h2 className={styles.sectionTitle}>Cijena</h2>
@@ -115,7 +135,11 @@ export default function UnosPage() {
 
         {errorMsg ? <p className={styles.error}>{errorMsg}</p> : null}
 
-        <button type="submit" className={styles.submit} disabled={status === "submitting"}>
+        <button
+          type="submit"
+          className={styles.submit}
+          disabled={status === "submitting" || !vehicleConfirmed || !prodavateljConfirmed || !kupacConfirmed}
+        >
           {status === "submitting" ? "Spremam..." : "Spremi"}
         </button>
       </form>
