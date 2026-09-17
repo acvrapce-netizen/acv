@@ -9,11 +9,22 @@ import type { VehicleDocumentOcrResult } from "../schemas/ocr";
 // Kod mora biti sam na početku retka (uz eventualni razmak) - bez ovog
 // sidrišta npr. "A" (registracijska oznaka) bi hvatao bilo koje slovo A
 // usred riječi bilo gdje u tekstu.
+//
+// Stvarni skenovi pokazali su da OCR na gustim dokumentima ponekad izmiješa
+// redoslijed retka koda i legende koja opisuje NEKI DRUGI kod (npr. "D.3"
+// zalijepljen uz "Tehnička najveća dopuštena masa [kg]", legendu za sasvim
+// drugo polje) - takav tekst prepoznatljivo sadrži uglatu zagradu s
+// jedinicom ili tipične riječi legende, pa se odbacuje umjesto da se ponudi
+// kao prijedlog (bolje prazno polje nego uvjerljivo pogrešna vrijednost na
+// pravnom dokumentu).
+const LEGEND_LIKE = /\[|dopuštena|masa|snaga|vozila|osovin|sjede|broj\b/i;
+
 function matchByCode(text: string, code: string): string | undefined {
   const escaped = code.replace(".", "\\.");
   const pattern = new RegExp(`^\\s*${escaped}\\b[.:\\)]?\\s*[\\r\\n]?\\s*([A-ZČĆŽŠĐ0-9][A-ZČĆŽŠĐa-zčćžšđ0-9\\-.,/\\s]{1,40})`, "m");
   const match = text.match(pattern);
-  return match?.[1]?.trim().split(/\s{2,}|[\r\n]/)[0]?.trim();
+  const value = match?.[1]?.trim().split(/\s{2,}|[\r\n]/)[0]?.trim();
+  return value && !LEGEND_LIKE.test(value) ? value : undefined;
 }
 
 // Vraća tekst KOJI SLIJEDI iza svake pojave šifre polja (ne samo prve) -
@@ -57,14 +68,18 @@ function normalizePlateOrVin(value: string | undefined): string | undefined {
 // "godinu proizvodnje" - datum prve registracije je najbliži dostupan i
 // praktični standard koji se koristi za "starost vozila" (isto kako to u
 // praksi računa i upravna pristojba, vidi src/lib/upravna-pristojba.ts).
+//
+// NAMJERNO bez fallbacka na "bilo koji datum u cijelom dokumentu" (za razliku
+// od VIN-a/tablice) - prometna dozvola ima više NEPOVEZANIH datuma (datumi
+// ovjere, rok važenja...) pa bi takav fallback lako ponudio krivi datum kao
+// da je pouzdano prepoznat. Bolje prazno polje nego uvjerljivo pogrešan datum.
 function matchFirstRegistrationDate(text: string): string | undefined {
   const datePattern = /(\d{2})[.\-/](\d{2})[.\-/](\d{4})|(\d{4})-(\d{2})-(\d{2})/;
   for (const window of findCodeValueWindows(text, "B")) {
     const found = window.match(datePattern);
     if (found) return toIsoDate(found);
   }
-  const found = text.match(datePattern);
-  return found ? toIsoDate(found) : undefined;
+  return undefined;
 }
 
 function toIsoDate(match: RegExpMatchArray): string {
@@ -77,7 +92,11 @@ function matchNumericByCode(text: string, code: string): number | undefined {
     const found = window.match(/\d+/);
     if (found) return Number(found[0]);
   }
-  return undefined;
+  // Fallback za slučaj kad OCR "zalijepi" kod i vrijednost bez razdvajanja
+  // (npr. "P.1 1560" pročitano kao "P11560") - traži kod bez točke odmah
+  // uz znamenke.
+  const glued = text.match(new RegExp(`\\b${code.replace(".", "")}\\s*(\\d{2,6})\\b`));
+  return glued ? Number(glued[1]) : undefined;
 }
 
 // Prometna dozvola ima dvije strane; ne pretpostavljamo koje je polje na

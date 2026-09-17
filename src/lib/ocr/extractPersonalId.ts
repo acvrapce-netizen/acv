@@ -8,10 +8,18 @@ import type { PersonalIdOcrResult } from "../schemas/ocr";
 // je fotografija koja strana - funkcija traži sve poznate oznake u tekstu koji
 // joj se preda, a pozivatelj (API ruta) spaja rezultate obje fotografije.
 
-// Naslovi polja su dvojezični (hrvatski/engleski) na eOI - tražimo oboje.
+// Naslovi polja su dvojezični, spojeni kosom crtom BEZ razmaka na cijelom
+// retku (npr. "PREZIME/SURNAME", "IME/NAME") - vrijednost je uvijek na
+// SLJEDEĆEM retku, ne odmah iza kose crte. Bez preskakanja cijele engleske
+// riječi (ne samo "/") regex bi ulovio npr. "SURNAME" kao da je to prezime.
+// \b sidrište na početku je nužno: bez njega "IME" bi se pogrešno poklopio
+// unutar "PREZIME" (koje sadrži "IME" kao podniz).
 function matchByLabel(text: string, labels: string[]): string | undefined {
   for (const label of labels) {
-    const pattern = new RegExp(`${label}[:\\s]*[\\r\\n]?\\s*([A-ZČĆŽŠĐ][A-ZČĆŽŠĐ'\\-\\s]{1,60})`, "i");
+    const pattern = new RegExp(
+      `\\b${label}(?:/[A-ZŠĐŽČĆ()]+)?[:\\s]*[\\r\\n]+\\s*([A-ZČĆŽŠĐ][A-ZČĆŽŠĐ'\\-\\s]{1,60})`,
+      "i"
+    );
     const match = text.match(pattern);
     const value = match?.[1]?.trim().split(/[\r\n]/)[0]?.trim();
     if (value) return value;
@@ -19,16 +27,28 @@ function matchByLabel(text: string, labels: string[]): string | undefined {
   return undefined;
 }
 
-// Adresa je obično duža i može sadržavati brojeve (kućni broj, poštanski
-// broj) - zaseban, širi regex od matchByLabel (koji cilja samo slovne
-// vrijednosti kao ime/prezime).
+// Adresa na stvarnim skenovima ide u DVA retka nakon labela (npr. mjesto pa
+// ulica, ili obrnuto) - uzima redke koji slijede dok ne naiđe na sljedeće
+// poznato polje (IZDALA, DATUM, OIB...) ili na MRZ redak (dugi niz
+// velikih slova/"<").
+const NEXT_FIELD_OR_MRZ = /^(IZDALA|ISSUED BY|DATUM|OIB|MBO|PIN|PHIN|[A-Z0-9<]{15,})/i;
+
 function matchAddress(text: string): string | undefined {
   const labels = ["PREBIVALIŠTE I ADRESA", "RESIDENCE AND ADDRESS", "PREBIVALIŠTE", "ADRESA"];
   for (const label of labels) {
-    const pattern = new RegExp(`${label}[:\\s]*[\\r\\n]?\\s*([A-ZČĆŽŠĐ0-9][A-ZČĆŽŠĐa-zčćžšđ0-9.,\\-/\\s]{3,80})`, "i");
+    const pattern = new RegExp(`\\b${label}(?:/[A-ZŠĐŽČĆ ]+)?[:\\s]*[\\r\\n]+`, "i");
     const match = text.match(pattern);
-    const value = match?.[1]?.trim().split(/[\r\n]/)[0]?.trim();
-    if (value) return value;
+    if (!match) continue;
+
+    const after = text.slice(match.index! + match[0].length);
+    const lines = after.split(/[\r\n]+/).map((l) => l.trim()).filter(Boolean);
+    const addressLines: string[] = [];
+    for (const line of lines.slice(0, 3)) {
+      if (NEXT_FIELD_OR_MRZ.test(line)) break;
+      addressLines.push(line);
+      if (addressLines.length >= 2) break; // mjesto + ulica u pravilu dovoljno
+    }
+    if (addressLines.length) return addressLines.join(", ");
   }
   return undefined;
 }
@@ -62,7 +82,7 @@ export function extractPersonalIdFields(rawText: string): PersonalIdOcrResult {
   const fromMrz = matchFromMrz(rawText);
 
   return {
-    ime: matchByLabel(rawText, ["IME", "GIVEN NAME\\(S\\)"]) ?? fromMrz.ime,
+    ime: matchByLabel(rawText, ["IME", "NAME", "GIVEN NAME\\(S\\)"]) ?? fromMrz.ime,
     prezime: matchByLabel(rawText, ["PREZIME", "SURNAME"]) ?? fromMrz.prezime,
     oib: matchOib(rawText),
     adresa: matchAddress(rawText),
