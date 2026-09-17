@@ -1,0 +1,237 @@
+// Auto Intermediary Platforma — data model
+// Poslovna pravila: vidi CLAUDE.md i auto-intermediary-platforma-spec.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Firma (komisionar) — nova, zasebna firma, ne NAVALIS-CISSA. Ime/OIB TBD,
+// singleton red lako mijenjati prije launcha. Vidi CLAUDE.md "Pravna firma".
+// ---------------------------------------------------------------------------
+model CompanySettings {
+  id              String   @id @default(cuid())
+  naziv           String
+  oib             String
+  adresa          String
+  iban            String
+  mbs             String? // matični broj subjekta (trgovački registar)
+  euid            String?
+  temeljniKapital Decimal? @db.Decimal(12, 2)
+  direktor        String?
+  email           String?
+  telefon         String?
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Fizička osoba — koristi se i za prodavatelja i za kupca unutar Transaction.
+// B2C only (kupac je uvijek fizička osoba, prodavatelj u MVP-u također).
+// ---------------------------------------------------------------------------
+model Person {
+  id        String   @id @default(cuid())
+  ime       String
+  prezime   String
+  oib       String
+  adresa    String
+  grad      String
+  drzava    String   @default("Hrvatska")
+  email     String
+  telefon   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vozilaUvlasnistvu      Vehicle[]     @relation("VehicleOwner")
+  transakcijeProdavatelj Transaction[] @relation("TransactionProdavatelj")
+  transakcijeKupac       Transaction[] @relation("TransactionKupac")
+  ugovori                Contract[]    @relation("ContractSigner")
+}
+
+// ---------------------------------------------------------------------------
+// Vozilo — polja iz KUPOPRODAJNI-UGOVOR.pdf (marka, u prometu od, zapremnina,
+// šasija, registarska oznaka) + tehnički blok iz MARŽNI-RAČUN.pdf (vrsta,
+// tip, model, godina proizvodnje, obujam, snaga, boja, sjedala, oblik,
+// vrsta motora, km, nosivost, CO2, zemlja porijekla).
+// ---------------------------------------------------------------------------
+model Vehicle {
+  id        String @id @default(cuid())
+  vlasnikId String
+  vlasnik   Person @relation("VehicleOwner", fields: [vlasnikId], references: [id])
+
+  // EU kategorija vozila kako stoji na računu/prometnoj (M1 = osobni automobil,
+  // L1e-L7e = motocikl/moped/ATV...) — koristi se za odabir tarife pristojbe.
+  vrstaVozila       String
+  marka             String
+  tip               String?
+  model             String?
+  sasija            String    @unique
+  registarskaOznaka String?
+  uPrometuOd        DateTime?
+  godinaProizvodnje Int
+  obujamCm3         Int?
+  snagaKw           Int?
+  boja              String?
+  brojSjedala       Int?
+  oblik             String?
+  vrstaMotora       String?
+  kilometraza       Int?
+  nosivost          Int?
+  coEmisija         Int?
+  zemljaPorijekla   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+}
+
+enum NacinPlacanja {
+  GOTOVINA
+  CESIJA // vozila ≥10.000 € — u MVP-u ručni proces izvan appa, vidi CLAUDE.md
+}
+
+enum TransactionStatus {
+  NACRT
+  PODACI_UNESENI
+  UGOVORI_POTPISANI
+  RACUN_IZDAN
+  ZAVRSENO
+  OTKAZANO
+}
+
+// ---------------------------------------------------------------------------
+// Transakcija — jedna kupoprodaja vozila kroz platformu. Firma je komisionar,
+// nikad vlasnik; vozilo se registrira izravno prodavatelj → kupac.
+// ---------------------------------------------------------------------------
+model Transaction {
+  id            String  @id @default(cuid())
+  prodavateljId String
+  prodavatelj   Person  @relation("TransactionProdavatelj", fields: [prodavateljId], references: [id])
+  kupacId       String
+  kupac         Person  @relation("TransactionKupac", fields: [kupacId], references: [id])
+  vehicleId     String
+  vehicle       Vehicle @relation(fields: [vehicleId], references: [id])
+
+  dogovorenaCijena Decimal @db.Decimal(12, 2) // cijena vozila, dogovorena između prodavatelja i kupca
+  proviziaFirme    Decimal @db.Decimal(12, 2) // marža/provizija firme (iznos na koji se obračunava PDV posebnim postupkom)
+
+  nacinPlacanja NacinPlacanja     @default(GOTOVINA)
+  status        TransactionStatus @default(NACRT)
+
+  // Upsell — carVertical: stub cijena/postotak popusta u MVP-u, API integracija kasnije.
+  carVerticalOdabran Boolean  @default(false)
+  carVerticalCijena  Decimal? @db.Decimal(12, 2)
+
+  // Upsell — garancija: MVP je čisti wa.me referral, bez HANFA/insurance-intermediary logike.
+  garancijaZatrazena   Boolean   @default(false)
+  garancijaZatrazenaAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contracts Contract[]
+  invoices  Invoice[]
+}
+
+enum ContractType {
+  KOMISIJA // prodavatelj potpisuje s firmom
+  PRIHVAT_RACUNA // kupac potpisuje prihvat računa
+}
+
+enum ContractStatus {
+  NA_CEKANJU
+  POTPISANO
+  ODBIJENO
+}
+
+// ---------------------------------------------------------------------------
+// Ugovor — dvosmjerni signing flow. Za svaku Transaction postoje (barem) dva
+// Contract reda: KOMISIJA (prodavatelj↔firma) i PRIHVAT_RACUNA (kupac).
+// ---------------------------------------------------------------------------
+model Contract {
+  id            String         @id @default(cuid())
+  transactionId String
+  transaction   Transaction    @relation(fields: [transactionId], references: [id])
+  type          ContractType
+  signerId      String
+  signer        Person         @relation("ContractSigner", fields: [signerId], references: [id])
+  status        ContractStatus @default(NA_CEKANJU)
+
+  signingToken String    @unique @default(cuid()) // token za mobilni pristup/link
+  potpisanoAt  DateTime?
+  pdfUrl       String? // generirani/potpisani PDF
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([transactionId, type])
+}
+
+// Svaki tip usluge ima drugačiji PDV tretman i MORA biti zaseban fiskalizirani
+// račun — nikad se ne miješaju na istoj Invoice. Vidi CLAUDE.md.
+enum InvoiceType {
+  VOZILO_MARZA // posebni postupak oporezivanja marže, čl. 95. st. 2. ZOPDV-a — bez PDV stavke
+  CARVERTICAL // standardna preprodaja usluge, PDV 25%
+}
+
+enum InvoiceStatus {
+  NACRT
+  FISKALIZIRANO
+  STORNIRANO
+}
+
+// ---------------------------------------------------------------------------
+// Račun — fiskalizirani B2C račun (JIR/ZKI/QR). Jedna Transaction može imati
+// više Invoice zapisa (1:N), po jedan za svaki tip usluge/PDV tretman.
+// ---------------------------------------------------------------------------
+model Invoice {
+  id            String        @id @default(cuid())
+  transactionId String
+  transaction   Transaction   @relation(fields: [transactionId], references: [id])
+  type          InvoiceType
+  status        InvoiceStatus @default(NACRT)
+
+  brojRacuna            String? // npr. "66/P1/1" — broj/poslovni prostor/naplatni uređaj
+  poslovniProstorOznaka String?
+  naplatniUredajOznaka  String?
+
+  ukupanIznos Decimal @db.Decimal(12, 2)
+  pdvIznos    Decimal @default(0) @db.Decimal(12, 2) // 0 za VOZILO_MARZA stavke po posebnom postupku
+
+  jir         String? @unique
+  zki         String? @unique
+  qrKodPodaci String? // sadržaj za QR kod (porezna.gov.hr/rn?jir=...&datv=...&izn=...)
+
+  izdanoAt    DateTime?
+  rokPlacanja DateTime?
+  napomena    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lines InvoiceLine[]
+}
+
+// ---------------------------------------------------------------------------
+// Stavka računa — smislena samo za više stavki ISTOG PDV tretmana unutar
+// jednog Invoice-a (npr. dva vozila u istoj transakciji na istom VOZILO_MARZA
+// računu). Različite usluge idu na zaseban Invoice, ne kao dodatna InvoiceLine.
+// ---------------------------------------------------------------------------
+model InvoiceLine {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+
+  opis            String // npr. "ŠKODA FABIA 2015" ili "CarVertical izvješće"
+  kolicina        Decimal @default(1) @db.Decimal(10, 2)
+  jedinicnaCijena Decimal @db.Decimal(12, 2)
+  rabatPostotak   Decimal @default(0) @db.Decimal(5, 2)
+  iznos           Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+}

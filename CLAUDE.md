@@ -14,7 +14,7 @@ Prije generiranja bilo kakvog PDF predloška (ugovor ili račun), prvo pročitat
 
 - Platforma NIJE marketplace/oglasnik. Kupac i prodavatelj su se već sami dogovorili oko cijene; platforma je dokumentacijski/closing sloj preko firme kao **komisionara**.
 - Vozilo se registrira **izravno na kupca** (prodavatelj → kupac). Firma nikad ne postaje vlasnik.
-- PDV: **posebni postupak oporezivanja marže** (čl. 92 ZOPDV) — PDV se obračunava samo na proviziju firme, ne na cijelu cijenu vozila.
+- PDV: **posebni postupak oporezivanja marže** (čl. 95. st. 2. ZOPDV-a) — PDV se obračunava samo na proviziju firme, ne na cijelu cijenu vozila.
 - Kupac je fizička osoba (B2C) → račun je **običan fiskalizirani račun** (JIR/ZKI/QR), **NIKAD strukturirani eRačun** (eRačun vrijedi samo B2B/B2G).
 - Ušteda za kupca = ne plaća **upravnu pristojbu** na prijepis, jer prodavatelj (porezni obveznik = firma) na računu primjenjuje poseban postupak oporezivanja marže. Puna tarifna tablica i izuzeća su u spec.md — koristiti TOČNO te brojke, ne izmišljati/aproksimirati.
 - Plaćanje: gotovina kroz blagajnu firme, do 10.000 € (zakonski maksimum, apsolutna zabrana iznad). Za vozila ≥10.000 € koristi se **cesija** (firma cedira veći dio potraživanja izravno prodavatelju) — u MVP-u ovo je **ručni proces izvan appa**, ne automatizirati sad.
