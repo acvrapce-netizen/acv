@@ -7,6 +7,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    // Migracije idu preko direktne konekcije — PgBouncer (pooler) transaction-mode
+    // ne podržava prepared statements koje Prisma migrate treba.
+    url: env("DIRECT_URL"),
   },
 });
