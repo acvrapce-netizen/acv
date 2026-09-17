@@ -36,6 +36,7 @@ export default function UnosPage() {
   const [proviziaFirme, setProviziaFirme] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [signingLinks, setSigningLinks] = useState<{ komisija: string; prihvatRacuna: string } | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +59,10 @@ export default function UnosPage() {
       if (!res.ok) {
         throw new Error(data?.error ?? "create_failed");
       }
+      setSigningLinks({
+        komisija: `/potpis/${data.komisijaSigningToken}`,
+        prihvatRacuna: `/potpis/${data.prihvatRacunaSigningToken}`,
+      });
       setStatus("done");
     } catch (err) {
       console.error("Intake submit failed", err);
@@ -69,7 +74,17 @@ export default function UnosPage() {
   if (status === "done") {
     return (
       <main className={styles.page}>
-        <p>Podaci spremljeni. Sljedeći korak (potpis ugovora) dolazi u idućoj fazi.</p>
+        <p>Podaci spremljeni. Pošalji linkove za potpis prodavatelju i kupcu:</p>
+        {signingLinks ? (
+          <ul>
+            <li>
+              Prodavatelj (ugovor o komisiji): <a href={signingLinks.komisija}>{signingLinks.komisija}</a>
+            </li>
+            <li>
+              Kupac (prihvat računa): <a href={signingLinks.prihvatRacuna}>{signingLinks.prihvatRacuna}</a>
+            </li>
+          </ul>
+        ) : null}
       </main>
     );
   }

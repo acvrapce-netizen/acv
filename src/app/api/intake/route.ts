@@ -37,10 +37,32 @@ export async function POST(request: Request) {
           status: "PODACI_UNESENI",
         },
       });
-      return { prodavateljRow, kupacRow, vehicleRow, transactionRow };
+
+      // Dvosmjerni signing flow (korak 4) - oba ugovora nastaju odmah, "na
+      // čekanju", tako da linkovi za potpis postoje čim su podaci uneseni.
+      const komisijaContract = await tx.contract.create({
+        data: {
+          transactionId: transactionRow.id,
+          type: "KOMISIJA",
+          signerId: prodavateljRow.id,
+        },
+      });
+      const prihvatRacunaContract = await tx.contract.create({
+        data: {
+          transactionId: transactionRow.id,
+          type: "PRIHVAT_RACUNA",
+          signerId: kupacRow.id,
+        },
+      });
+
+      return { prodavateljRow, kupacRow, vehicleRow, transactionRow, komisijaContract, prihvatRacunaContract };
     });
 
-    return NextResponse.json({ transactionId: result.transactionRow.id });
+    return NextResponse.json({
+      transactionId: result.transactionRow.id,
+      komisijaSigningToken: result.komisijaContract.signingToken,
+      prihvatRacunaSigningToken: result.prihvatRacunaContract.signingToken,
+    });
   } catch (err) {
     console.error("Intake create failed", err);
     return NextResponse.json({ error: "create_failed" }, { status: 500 });

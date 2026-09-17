@@ -164,6 +164,7 @@ model Contract {
 
   signingToken String    @unique @default(cuid()) // token za mobilni pristup/link
   potpisanoAt  DateTime?
+  signatureRef String? // potpis (data URL slike s canvasa) - vidi CLAUDE.md/PROGRESS napomenu o storageu
   pdfUrl       String? // generirani/potpisani PDF
 
   createdAt DateTime @default(now())
