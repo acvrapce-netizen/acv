@@ -1,0 +1,47 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px dashed #444;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-align: left;
+  width: 100%;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.icon {
+  font-size: 1.3rem;
+}
+
+.thumbnail {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 0.35rem;
+  flex-shrink: 0;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.error {
+  font-size: 0.8rem;
+  color: #f87171;
+  margin: 0;
+}

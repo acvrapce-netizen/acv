@@ -1,0 +1,59 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid #2a2a2a;
+  background: #111111;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.ocrRow {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ocrRow > * {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field label {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.field input,
+.field select {
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.4rem;
+  border: 1px solid #333;
+  background: transparent;
+  color: inherit;
+  font-size: 0.95rem;
+}
+
+.hint {
+  font-size: 0.78rem;
+  opacity: 0.6;
+  margin: 0;
+}
