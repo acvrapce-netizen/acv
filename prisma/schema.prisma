@@ -25,8 +25,15 @@ model CompanySettings {
   direktor        String?
   email           String?
   telefon         String?
-  updatedAt       DateTime @updatedAt
-  createdAt       DateTime @default(now())
+
+  // Prag gotovine u blagajni iznad kojeg admin dashboard javlja "potreban polog".
+  // Default 10.000 € (isti broj kao zakonski prag po transakciji), ali je
+  // ovo interna/poslovna politika, ne nužno isti propis - potvrditi s
+  // Branom/knjigovođom prije nego se uzme kao konačno.
+  dnevniMaksimumBlagajna Decimal @default(10000) @db.Decimal(12, 2)
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 }
 
 // ---------------------------------------------------------------------------
@@ -34,15 +41,20 @@ model CompanySettings {
 // B2C only (kupac je uvijek fizička osoba, prodavatelj u MVP-u također).
 // ---------------------------------------------------------------------------
 model Person {
-  id        String   @id @default(cuid())
-  ime       String
-  prezime   String
-  oib       String
-  adresa    String
-  grad      String
-  drzava    String   @default("Hrvatska")
-  email     String
-  telefon   String
+  id                String  @id @default(cuid())
+  ime               String
+  prezime           String
+  oib               String
+  adresa            String
+  grad              String
+  drzava            String  @default("Hrvatska")
+  email             String
+  telefon           String
+  // Izvorne fotografije osobne iskaznice (Supabase Storage URL) - snimljene uz
+  // OCR upload na formi, prikazuju se u detalju transakcije kao pravni trag.
+  osobnaPrednjaUrl  String?
+  osobnaStraznjaUrl String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -83,6 +95,11 @@ model Vehicle {
   nosivost          Int?
   coEmisija         Int?
   zemljaPorijekla   String?
+
+  // Izvorne fotografije prometne dozvole (Supabase Storage URL) - vidi napomenu
+  // kod Person.osobnaPrednjaUrl.
+  prometnaPrednjaUrl  String?
+  prometnaStraznjaUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -134,8 +151,9 @@ model Transaction {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contracts Contract[]
-  invoices  Invoice[]
+  contracts     Contract[]
+  invoices      Invoice[]
+  blagajnaUnosi BlagajnaUnos[]
 }
 
 enum ContractType {
@@ -233,6 +251,30 @@ model InvoiceLine {
   jedinicnaCijena Decimal @db.Decimal(12, 2)
   rabatPostotak   Decimal @default(0) @db.Decimal(5, 2)
   iznos           Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+}
+
+enum BlagajnaTip {
+  UPLATA // kupac plaća firmi (iznos s računa)
+  ISPLATA // firma isplaćuje prodavatelju (dogovorena cijena vozila)
+}
+
+// ---------------------------------------------------------------------------
+// Blagajna — minimalna knjiga uplata/isplata gotovine kroz blagajnu firme.
+// Dovoljno za "Blagajnički izvještaj"/"Dnevni polog" izvještaje u adminu, ne
+// puna blagajnička aplikacija (nema storna, razdoblja smjena i sl. u MVP-u).
+// Svaki izdani GOTOVINA račun stvara DVA retka: uplata od kupca (puni iznos
+// s računa) i isplata prodavatelju (dogovorena cijena), oboje vezano uz istu
+// transakciju - vidi /api/invoices. Saldo = SUM(uplata) - SUM(isplata).
+// ---------------------------------------------------------------------------
+model BlagajnaUnos {
+  id            String       @id @default(cuid())
+  tip           BlagajnaTip
+  iznos         Decimal      @db.Decimal(12, 2)
+  opis          String?
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
 
   createdAt DateTime @default(now())
 }

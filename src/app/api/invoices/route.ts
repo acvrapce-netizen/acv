@@ -94,6 +94,25 @@ export async function POST(request: Request) {
       data: { status: "RACUN_IZDAN" },
     });
 
+    // Blagajna: gotovina ulazi od kupca i (u istom koraku) izlazi prodavatelju -
+    // dva retka, vidi shema napomenu na BlagajnaUnos.
+    await tx.blagajnaUnos.create({
+      data: {
+        tip: "UPLATA",
+        iznos: ukupniIznos,
+        opis: `Naplata računa ${brojRacuna} od kupca`,
+        transactionId: transaction.id,
+      },
+    });
+    await tx.blagajnaUnos.create({
+      data: {
+        tip: "ISPLATA",
+        iznos: transaction.dogovorenaCijena,
+        opis: `Isplata prodavatelju za ${vehicleOpis}`,
+        transactionId: transaction.id,
+      },
+    });
+
     return invoice;
   });
 

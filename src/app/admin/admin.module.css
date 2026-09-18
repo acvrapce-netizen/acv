@@ -1,0 +1,343 @@
+.page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #ededed;
+  font-family: var(--font-geist-sans);
+}
+
+.container {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #222;
+}
+
+.navBrand {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.navLink {
+  font-size: 0.85rem;
+  color: #a1a1a1;
+  text-decoration: none;
+}
+
+.navLink:hover {
+  color: #ededed;
+}
+
+.pageTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+}
+
+/* Notification bars */
+.notifications {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.notification {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.notificationInfo {
+  background: #12203a;
+  border-color: #1d3a66;
+  color: #8ab4f8;
+}
+
+.notificationWarn {
+  background: #3a2a0f;
+  border-color: #6b4c15;
+  color: #ffd166;
+}
+
+.notificationDanger {
+  background: #3a1414;
+  border-color: #6b1f1f;
+  color: #ff8080;
+}
+
+.notificationArrow {
+  opacity: 0.6;
+}
+
+/* Tile grid */
+.tileGroup {
+  margin-bottom: 2rem;
+}
+
+.tileGroupTitle {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+  margin-bottom: 0.75rem;
+}
+
+.tileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.9rem;
+}
+
+.tile {
+  display: block;
+  padding: 1.1rem;
+  border-radius: 0.75rem;
+  border: 1px solid;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.1s ease;
+}
+
+.tile:hover {
+  transform: translateY(-1px);
+}
+
+.tileGreen {
+  background: #0f2417;
+  border-color: #1f4d31;
+}
+
+.tileOrange {
+  background: #2a1c0d;
+  border-color: #5a3c14;
+}
+
+.tileRed {
+  background: #2a1010;
+  border-color: #5a1a1a;
+}
+
+.tileTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.tileSub {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+/* Tables */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #888;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.table td {
+  padding: 0.6rem;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.table tr:hover td {
+  background: #111;
+}
+
+.tableLink {
+  color: #8ab4f8;
+  text-decoration: none;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.badgeNeutral {
+  background: #222;
+  color: #ccc;
+}
+
+.badgeWarn {
+  background: #3a2a0f;
+  color: #ffd166;
+}
+
+.badgeGood {
+  background: #0f2417;
+  color: #6ee7a0;
+}
+
+.badgeDanger {
+  background: #3a1414;
+  color: #ff8080;
+}
+
+.card {
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #2a2a2a;
+  background: #111111;
+  margin-bottom: 1.5rem;
+}
+
+.cardTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.statRow {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.statLabel {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.searchBox {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.4rem;
+  border: 1px solid #333;
+  background: transparent;
+  color: inherit;
+  font-size: 0.95rem;
+}
+
+.searchButton {
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.4rem;
+  border: none;
+  background: #2f6fed;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.empty {
+  color: #888;
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+.backLink {
+  font-size: 0.85rem;
+  color: #8ab4f8;
+  text-decoration: none;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.docGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.75rem;
+}
+
+.docLink {
+  display: block;
+  padding: 0.8rem;
+  border-radius: 0.5rem;
+  border: 1px solid #2a2a2a;
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.85rem;
+}
+
+.docLink:hover {
+  border-color: #444;
+}
+
+.docLinkDisabled {
+  display: block;
+  padding: 0.8rem;
+  border-radius: 0.5rem;
+  border: 1px dashed #333;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.timelineRow {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.timelineDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2f6fed;
+  margin-top: 0.4rem;
+  flex-shrink: 0;
+}
+
+.timelineMeta {
+  color: #888;
+  font-size: 0.78rem;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 700px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}

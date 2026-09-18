@@ -8,6 +8,10 @@ export const styles = StyleSheet.create({
     fontSize: 9,
     fontFamily: "PTSans",
     color: "#111111",
+    // Ugrađeni PTSans subset ima pokvareno/nepotpuno "fi" ligature mapiranje -
+    // riječi poput "fiskaliziran" renderale su se kao "fskaliziran" (nestao
+    // "i"). Isključivanje standardnih ligatura popravlja to bez zamjene fonta.
+    fontFeatureSettings: { liga: false },
   },
   headerRow: {
     flexDirection: "row",
