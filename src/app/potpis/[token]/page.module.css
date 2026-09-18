@@ -30,12 +30,15 @@
   line-height: 1.6;
 }
 
-.draftNotice {
-  padding: 0.75rem;
-  border-radius: 0.4rem;
-  background: #7c5c00;
-  color: #ffd166;
-  font-weight: 600;
+.paragraph {
+  white-space: pre-line;
+  margin-bottom: 0.9rem;
+}
+
+.paragraph:first-child {
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: center;
   margin-top: 0;
 }
 

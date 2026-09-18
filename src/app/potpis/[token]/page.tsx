@@ -3,21 +3,61 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import SignaturePad from "@/components/SignaturePad";
+import { buildKomisijaParagraphs, buildPrihvatRacunaParagraphs } from "@/lib/contracts/templates";
 import styles from "./page.module.css";
 
 interface ContractData {
   id: string;
   type: "KOMISIJA" | "PRIHVAT_RACUNA";
   status: "NA_CEKANJU" | "POTPISANO" | "ODBIJENO";
+  potpisanoAt: string | null;
   signer: { ime: string; prezime: string; oib: string; adresa: string; grad: string };
   transaction: {
     dogovorenaCijena: string;
     proviziaFirme: string;
-    vehicle: { marka: string; model: string | null; registarskaOznaka: string | null; sasija: string };
-    prodavatelj: { ime: string; prezime: string };
-    kupac: { ime: string; prezime: string };
+    vehicle: {
+      marka: string;
+      model: string | null;
+      uPrometuOd: string | null;
+      registarskaOznaka: string | null;
+      sasija: string;
+    };
+    prodavatelj: { ime: string; prezime: string; oib: string; adresa: string };
+    kupac: { ime: string; prezime: string; oib: string; adresa: string };
   };
   company: { naziv: string; oib: string; adresa: string } | null;
+}
+
+function formatDateForTemplate(iso: string | null): string | null {
+  if (!iso) return null;
+  // hr-HR lokal već ispisuje datum s završnom točkom (npr. "23. 05. 2018.").
+  return new Date(iso).toLocaleDateString("hr-HR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function buildParagraphs(contract: ContractData): string[] {
+  const dogovorenaCijena = Number(contract.transaction.dogovorenaCijena);
+  const proviziaFirme = Number(contract.transaction.proviziaFirme);
+  const datum = contract.potpisanoAt ? new Date(contract.potpisanoAt) : new Date();
+
+  if (contract.type === "KOMISIJA") {
+    return buildKomisijaParagraphs({
+      datum,
+      company: contract.company,
+      komitent: contract.signer,
+      kupac: contract.transaction.kupac,
+      vehicle: { ...contract.transaction.vehicle, uPrometuOd: formatDateForTemplate(contract.transaction.vehicle.uPrometuOd) },
+      dogovorenaCijena,
+      proviziaFirme,
+    });
+  }
+
+  return buildPrihvatRacunaParagraphs({
+    datum,
+    kupac: contract.signer,
+    vehicle: contract.transaction.vehicle,
+    brojRacuna: null, // Invoice još ne postoji u ovoj fazi flowa (nastaje pri fiskalizaciji)
+    ukupanIznos: dogovorenaCijena + proviziaFirme,
+  });
 }
 
 const TITLES: Record<ContractData["type"], string> = {
@@ -111,6 +151,7 @@ export default function PotpisPage() {
   }
 
   const { vehicle } = contract.transaction;
+  const paragraphs = buildParagraphs(contract);
 
   return (
     <main className={styles.page}>
@@ -123,16 +164,11 @@ export default function PotpisPage() {
       </p>
 
       <div className={styles.textBox} onScroll={handleScroll}>
-        <p className={styles.draftNotice}>
-          ⚠️ NACRT — točan pravni tekst ovog dokumenta čeka tvoju potvrdu prije nego postane konačan. Ovo je
-          privremeni placeholder koji dokazuje da mehanizam (dohvat, scroll-to-accept, potpis, spremanje) radi
-          end-to-end.
-        </p>
-        <p>
-          Ovdje će stajati puni tekst {TITLES[contract.type].toLowerCase()}a, restrukturiran prema{" "}
-          {contract.type === "KOMISIJA" ? "KUPOPRODAJNI-UGOVOR.pdf predlošku (dvostrani model prodavatelj↔firma)" : "napomenama s dna MARŽNI-RAČUN.pdf predloška"}
-          .
-        </p>
+        {paragraphs.map((paragraph, i) => (
+          <p key={i} className={styles.paragraph}>
+            {paragraph}
+          </p>
+        ))}
       </div>
 
       <label className={styles.acceptRow}>
@@ -142,7 +178,7 @@ export default function PotpisPage() {
           disabled={!scrolledToBottom}
           onChange={(e) => setAccepted(e.target.checked)}
         />
-        Pročitao/la sam i prihvaćam {TITLES[contract.type].toLowerCase()}.
+        Pročitao/la sam gornji tekst i slažem se s njim.
       </label>
       {!scrolledToBottom && <p className={styles.hint}>Doscrolaj do dna teksta da bi mogao/la prihvatiti.</p>}
 
