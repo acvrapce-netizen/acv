@@ -14,6 +14,9 @@ export const vehicleDocumentOcrResultSchema = z.object({
   snagaKw: z.number().optional(),
   boja: z.string().optional(),
   rawText: z.string(),
+  // Javni URL izvorne fotografije (Supabase Storage) - null ako je upload
+  // pao (OCR i dalje vraća prijedlog polja neovisno o tome).
+  imageUrl: z.string().nullable().optional(),
 });
 export type VehicleDocumentOcrResult = z.infer<typeof vehicleDocumentOcrResultSchema>;
 
@@ -25,5 +28,6 @@ export const personalIdOcrResultSchema = z.object({
   oib: z.string().optional(),
   adresa: z.string().optional(),
   rawText: z.string(),
+  imageUrl: z.string().nullable().optional(),
 });
 export type PersonalIdOcrResult = z.infer<typeof personalIdOcrResultSchema>;

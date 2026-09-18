@@ -20,6 +20,8 @@ export interface VehicleFormState {
   obujamCm3: string;
   snagaKw: string;
   boja: string;
+  prometnaPrednjaUrl: string | null;
+  prometnaStraznjaUrl: string | null;
 }
 
 export const emptyVehicleForm: VehicleFormState = {
@@ -34,6 +36,8 @@ export const emptyVehicleForm: VehicleFormState = {
   obujamCm3: "",
   snagaKw: "",
   boja: "",
+  prometnaPrednjaUrl: null,
+  prometnaStraznjaUrl: null,
 };
 
 interface VehicleFormProps {
@@ -71,6 +75,8 @@ function mergeOcrResult(
     obujamCm3: pick("obujamCm3", result.obujamCm3),
     snagaKw: pick("snagaKw", result.snagaKw),
     boja: pick("boja", result.boja),
+    prometnaPrednjaUrl: current.prometnaPrednjaUrl,
+    prometnaStraznjaUrl: current.prometnaStraznjaUrl,
   };
   return { next, filledByOcr };
 }
@@ -91,9 +97,10 @@ export default function VehicleForm({ value, onChange, confirmed, onConfirmedCha
     onConfirmedChange(false);
   }
 
-  function handleOcrResult(result: VehicleDocumentOcrResult) {
+  function handleOcrResult(result: VehicleDocumentOcrResult, slot: "prednja" | "straznja") {
     const { next, filledByOcr } = mergeOcrResult(value, result);
-    onChange(next);
+    const urlKey = slot === "prednja" ? "prometnaPrednjaUrl" : "prometnaStraznjaUrl";
+    onChange({ ...next, [urlKey]: result.imageUrl ?? next[urlKey] });
     if (filledByOcr.length) {
       setOcrFields((prev) => new Set([...prev, ...filledByOcr]));
       onConfirmedChange(false);
@@ -118,12 +125,12 @@ export default function VehicleForm({ value, onChange, confirmed, onConfirmedCha
         <OcrPhotoUpload<VehicleDocumentOcrResult>
           label="Prednja strana prometne"
           endpoint="/api/ocr/vehicle-document"
-          onResult={handleOcrResult}
+          onResult={(result) => handleOcrResult(result, "prednja")}
         />
         <OcrPhotoUpload<VehicleDocumentOcrResult>
           label="Stražnja strana prometne"
           endpoint="/api/ocr/vehicle-document"
-          onResult={handleOcrResult}
+          onResult={(result) => handleOcrResult(result, "straznja")}
         />
       </div>
       <p className={styles.hint}>

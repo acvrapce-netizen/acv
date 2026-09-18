@@ -15,6 +15,8 @@ export interface PersonFormState {
   grad: string;
   email: string;
   telefon: string;
+  osobnaPrednjaUrl: string | null;
+  osobnaStraznjaUrl: string | null;
 }
 
 export const emptyPersonForm: PersonFormState = {
@@ -25,6 +27,8 @@ export const emptyPersonForm: PersonFormState = {
   grad: "",
   email: "",
   telefon: "",
+  osobnaPrednjaUrl: null,
+  osobnaStraznjaUrl: null,
 };
 
 type OcrExtractableField = "ime" | "prezime" | "oib" | "adresa";
@@ -75,9 +79,10 @@ export default function PersonForm({ title, value, onChange, confirmed, onConfir
     onConfirmedChange(false);
   }
 
-  function handleOcrResult(result: PersonalIdOcrResult) {
+  function handleOcrResult(result: PersonalIdOcrResult, slot: "prednja" | "straznja") {
     const { next, filledByOcr } = mergeOcrResult(value, result);
-    onChange(next);
+    const urlKey = slot === "prednja" ? "osobnaPrednjaUrl" : "osobnaStraznjaUrl";
+    onChange({ ...next, [urlKey]: result.imageUrl ?? next[urlKey] });
     if (filledByOcr.length) {
       setOcrFields((prev) => new Set([...prev, ...filledByOcr]));
       onConfirmedChange(false);
@@ -102,12 +107,12 @@ export default function PersonForm({ title, value, onChange, confirmed, onConfir
         <OcrPhotoUpload<PersonalIdOcrResult>
           label="Prednja strana osobne iskaznice"
           endpoint="/api/ocr/personal-id"
-          onResult={handleOcrResult}
+          onResult={(result) => handleOcrResult(result, "prednja")}
         />
         <OcrPhotoUpload<PersonalIdOcrResult>
           label="Stražnja strana osobne iskaznice"
           endpoint="/api/ocr/personal-id"
-          onResult={handleOcrResult}
+          onResult={(result) => handleOcrResult(result, "straznja")}
         />
       </div>
       <p className={styles.hint}>

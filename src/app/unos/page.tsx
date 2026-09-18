@@ -22,6 +22,8 @@ function vehicleToPayload(vehicle: VehicleFormState) {
     obujamCm3: vehicle.obujamCm3 ? Number(vehicle.obujamCm3) : undefined,
     snagaKw: vehicle.snagaKw ? Number(vehicle.snagaKw) : undefined,
     boja: vehicle.boja || undefined,
+    prometnaPrednjaUrl: vehicle.prometnaPrednjaUrl ?? undefined,
+    prometnaStraznjaUrl: vehicle.prometnaStraznjaUrl ?? undefined,
   };
 }
 

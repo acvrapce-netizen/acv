@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { extractPersonalIdFromImage } from "@/lib/ocr/extractPersonalId";
+import { uploadDocumentImage } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
-// Fotografija osobne iskaznice (bilo koja strana). Ne sprema ništa, samo
-// vraća prijedlog polja za prefill - korisnik uvijek pregleda/ispravlja prije
-// submita forme (pravni dokument).
+// Fotografija osobne iskaznice (bilo koja strana). Vraća prijedlog polja za
+// prefill (korisnik uvijek pregleda/ispravlja prije submita forme - pravni
+// dokument) + javni URL izvorne slike (Supabase Storage), spremljene radi
+// pravnog traga u admin panelu.
 export async function POST(request: Request) {
   const formData = await request.formData();
   const file = formData.get("file");
@@ -18,8 +20,14 @@ export async function POST(request: Request) {
 
   const buffer = Buffer.from(await file.arrayBuffer());
   try {
-    const result = await extractPersonalIdFromImage(buffer);
-    return NextResponse.json(result);
+    const [result, imageUrl] = await Promise.all([
+      extractPersonalIdFromImage(buffer),
+      uploadDocumentImage(buffer, file.type, "osobne").catch((err) => {
+        console.error("Document image upload failed (personal-id)", err);
+        return null;
+      }),
+    ]);
+    return NextResponse.json({ ...result, imageUrl });
   } catch (err) {
     console.error("OCR extraction failed (personal-id)", err);
     return NextResponse.json({ error: "ocr_failed" }, { status: 502 });

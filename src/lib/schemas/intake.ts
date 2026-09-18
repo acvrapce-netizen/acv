@@ -8,6 +8,10 @@ const personSchema = z.object({
   grad: z.string().min(1),
   email: z.string().email(),
   telefon: z.string().min(1),
+  // Javni URL-ovi izvorne fotografije osobne iskaznice (Supabase Storage) -
+  // pravni trag u admin panelu, vidi CLAUDE.md.
+  osobnaPrednjaUrl: z.string().nullable().optional(),
+  osobnaStraznjaUrl: z.string().nullable().optional(),
 });
 
 const vehicleSchema = z.object({
@@ -22,6 +26,8 @@ const vehicleSchema = z.object({
   obujamCm3: z.number().int().optional(),
   snagaKw: z.number().int().optional(),
   boja: z.string().optional(),
+  prometnaPrednjaUrl: z.string().nullable().optional(),
+  prometnaStraznjaUrl: z.string().nullable().optional(),
 });
 
 export const intakeSchema = z.object({
