@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import SignaturePad from "@/components/SignaturePad";
 import { buildKomisijaParagraphs, buildPrihvatRacunaParagraphs } from "@/lib/contracts/templates";
 import styles from "./page.module.css";
@@ -13,6 +13,9 @@ interface ContractData {
   potpisanoAt: string | null;
   signer: { ime: string; prezime: string; oib: string; adresa: string; grad: string };
   transaction: {
+    status: "NACRT" | "PODACI_UNESENI" | "UGOVORI_POTPISANI" | "RACUN_IZDAN" | "ZAVRSENO" | "OTKAZANO";
+    nacinPlacanja: "GOTOVINA" | "CESIJA";
+    proviziaPlacenaAt: string | null;
     dogovorenaCijena: string;
     proviziaFirme: string;
     vehicle: {
@@ -68,6 +71,8 @@ const TITLES: Record<ContractData["type"], string> = {
 export default function PotpisPage() {
   const params = useParams<{ token: string }>();
   const token = params.token;
+  const searchParams = useSearchParams();
+  const placanje = searchParams.get("placanje"); // "uspjesno" | "otkazano" | null, iz Stripe Checkout redirecta
 
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const [errorReason, setErrorReason] = useState<string | null>(null);
@@ -79,6 +84,27 @@ export default function PotpisPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  async function handlePayProvizija() {
+    setCheckoutLoading(true);
+    setCheckoutError(null);
+    try {
+      const res = await fetch(`/api/contracts/${token}/checkout`, { method: "POST" });
+      const body = await res.json();
+      if (!res.ok || !body.url) {
+        setCheckoutError("Pokretanje plaćanja nije uspjelo, pokušaj ponovno.");
+        setCheckoutLoading(false);
+        return;
+      }
+      window.location.href = body.url;
+    } catch {
+      setCheckoutError("Pokretanje plaćanja nije uspjelo, pokušaj ponovno.");
+      setCheckoutLoading(false);
+    }
+  }
 
   useEffect(() => {
     fetch(`/api/contracts/${token}`)
@@ -142,10 +168,44 @@ export default function PotpisPage() {
   if (!contract) return null;
 
   if (success || contract.status === "POTPISANO") {
+    const { transaction } = contract;
+    const showPaymentStep =
+      contract.type === "PRIHVAT_RACUNA" &&
+      transaction.nacinPlacanja === "GOTOVINA" &&
+      !transaction.proviziaPlacenaAt &&
+      transaction.status !== "RACUN_IZDAN" &&
+      transaction.status !== "ZAVRSENO";
+
     return (
       <main className={styles.page}>
         <h1>Hvala!</h1>
         <p>{TITLES[contract.type]} je uspješno potpisan.</p>
+
+        {contract.type === "PRIHVAT_RACUNA" && (transaction.proviziaPlacenaAt || transaction.status === "RACUN_IZDAN" || transaction.status === "ZAVRSENO") && (
+          <p>Provizija je naplaćena, fiskalizirani račun je izdan.</p>
+        )}
+
+        {showPaymentStep && transaction.status !== "UGOVORI_POTPISANI" && (
+          <p>Čekamo da i prodavatelj potpiše ugovor o komisiji — nakon toga ćemo te zamoliti da platiš proviziju karticom.</p>
+        )}
+
+        {showPaymentStep && transaction.status === "UGOVORI_POTPISANI" && (
+          <div className={styles.signatureSection}>
+            <h2>Plaćanje provizije</h2>
+            <p>
+              Preostao je još jedan korak: plaćanje provizije od {Number(transaction.proviziaFirme).toLocaleString("hr-HR")} € karticom.
+            </p>
+            {placanje === "otkazano" && <p className={styles.hint}>Plaćanje je otkazano — pokušaj ponovno kad budeš spreman/na.</p>}
+            {checkoutError && <p className={styles.error}>{checkoutError}</p>}
+            <button type="button" className={styles.submit} disabled={checkoutLoading} onClick={handlePayProvizija}>
+              {checkoutLoading ? "Preusmjeravanje..." : "Plati proviziju karticom"}
+            </button>
+          </div>
+        )}
+
+        {contract.type === "PRIHVAT_RACUNA" && transaction.nacinPlacanja === "CESIJA" && !transaction.proviziaPlacenaAt && (
+          <p>Ova transakcija ide preko cesije — javit ćemo ti se odvojeno za nastavak.</p>
+        )}
       </main>
     );
   }

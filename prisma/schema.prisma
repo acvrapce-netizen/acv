@@ -148,6 +148,14 @@ model Transaction {
   garancijaZatrazena   Boolean   @default(false)
   garancijaZatrazenaAt DateTime?
 
+  // Stripe naplata provizije firme (kartica) — kupac plaća SAMO proviziju ovim
+  // putem, ostatak (dogovorenaCijena prodavatelju) i dalje ide gotovina/blagajna
+  // ili cesija bez promjene. checkout.session.completed webhook je jedini
+  // okidač izdavanja računa za GOTOVINA transakcije (vidi /api/stripe/webhook).
+  stripeCheckoutSessionId String?   @unique
+  stripePaymentIntentId   String?
+  proviziaPlacenaAt       DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

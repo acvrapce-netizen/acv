@@ -40,6 +40,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
       grad: contract.signer.grad,
     },
     transaction: {
+      status: contract.transaction.status,
+      nacinPlacanja: contract.transaction.nacinPlacanja,
+      proviziaPlacenaAt: contract.transaction.proviziaPlacenaAt,
       dogovorenaCijena: contract.transaction.dogovorenaCijena,
       proviziaFirme: contract.transaction.proviziaFirme,
       vehicle: contract.transaction.vehicle,
